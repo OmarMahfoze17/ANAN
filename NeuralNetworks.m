@@ -3,21 +3,25 @@ classdef NeuralNetworks < handle
         Value
         noLayers
         noTrainPoints
+        activationFunType
         learnRate
         J
         noUnits
         a; % Each element is an "activation" of unit i in the layer l a[l][i]
+        z;
         error
         grad
         theta; % matrix of weights controlling the function mapping form layer j to j+1. theta[l][i in layer l+1][i in layer l];
     end
     methods
         %%% ################ Constructor #####################
-        function obj=NeuralNetworks(nL,nU,weightsScal)
+        function obj=NeuralNetworks(nL,nU,weightsScal,activationFunType)
             obj.noLayers=nL;
             obj.noUnits=nU;
+            obj.activationFunType=activationFunType;
             for l=1:obj.noLayers
-                obj.a{l}=zeros(obj.noUnits(l),1);
+                obj.a{l}=zeros(1,obj.noUnits(l));
+                obj.z{l}=zeros(1,obj.noUnits(l));
                 obj.error{l}=zeros(obj.noUnits(l),1);
             end
             obj.initializeWeights(-weightsScal,weightsScal);
@@ -33,7 +37,8 @@ classdef NeuralNetworks < handle
         %%%################# Initialize Weights ####################
         function initializeWeights(obj,minimum,maximum)
             for l=1:obj.noLayers-1
-                obj.theta{l}=minimum + (maximum-minimum)*rand(obj.noUnits(l),obj.noUnits(l+1));
+%                 obj.theta{l}=minimum + (maximum-minimum)*rand(obj.noUnits(l),obj.noUnits(l+1));
+                obj.theta{l}=ones(obj.noUnits(l),obj.noUnits(l+1))*.2;
                 obj.grad{l}=zeros(obj.noUnits(l),obj.noUnits(l+1));
                 size(obj.theta{l});
             end
@@ -43,7 +48,8 @@ classdef NeuralNetworks < handle
         function feedForward(obj,input)
             obj.a{1}=input;
             for l=2:obj.noLayers
-                obj.a{l}=obj.a{l-1}*obj.theta{l-1};
+                obj.z{l}=obj.a{l-1}*obj.theta{l-1};
+                obj.a{l}=activationFun(obj.z{l},obj.activationFunType,'noDerivate');
                 if l~=obj.noLayers
                     obj.a{l}(1)=1;
                 end
@@ -53,8 +59,9 @@ classdef NeuralNetworks < handle
         %%%#################### Error #########################
         function Error(obj,target)
             obj.error{obj.noLayers}=[obj.a{obj.noLayers}-target]';
-            for l=obj.noLayers-1:-1:1
-                obj.error{l}=obj.theta{l}*obj.error{l+1};
+            for l=obj.noLayers-1:-1:2
+                obj.error{l}=obj.theta{l}*obj.error{l+1}.*activationFun(obj.z{l},...
+                        obj.activationFunType,'derivate')';                   
             end
         end
         %%%####################################################
@@ -64,12 +71,14 @@ classdef NeuralNetworks < handle
             for l=1: obj.noLayers-1
                 obj.grad{l}=obj.grad{l}*0;
             end
-            obj.grad{l}(2);
+            
             for i=1:length(inputs)
                 obj.feedForward(inputs(i,:));
                 obj.Error(targets(i,:));
                 J=J+sum(obj.error{obj.noLayers}.^2);
                 for l=1:obj.noLayers-1
+                    
+%                     obj.grad{l}=obj.grad{l}+[obj.a{l}]'*obj.error{l+1}';
                     obj.grad{l}=obj.grad{l}+obj.a{l}'*obj.error{l+1}';
                 end
             end
@@ -78,7 +87,7 @@ classdef NeuralNetworks < handle
             end
 %             obj.grad{l}(2)
             J=J/length(inputs)
-            obj.J=J;
+            obj.J=J; 
             %%%---------------- Correction of weights
             for l=obj.noLayers-1:-1:1
                 obj.theta{l}=obj.theta{l}-obj.grad{l}*learnRate;
