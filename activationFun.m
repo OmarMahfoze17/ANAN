@@ -15,10 +15,10 @@ elseif Derivate=="derivate"
         
         f=1;
     elseif type=="sigmoid"
-        a=activationFun(z,type,"no");
+        a=activationFun(z,type,"noDerivate");
         f=a.*(1-a);
     elseif type =="tanh"
-        a=activationFun(z,type,"no");
+        a=activationFun(z,type,"noDerivate");
         f=1-a.^2;
     else
         error('OMAR == Activation function not defined')
