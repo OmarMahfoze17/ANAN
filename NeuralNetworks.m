@@ -5,7 +5,9 @@ classdef NeuralNetworks < handle
         noTrainPoints
         activationFunType
         learnRate
-        J
+        
+        costFunTrain
+        costFunTest
         noUnits
         a; % Each element is an "activation" of unit i in the layer l a[l][i]
         z;
@@ -16,6 +18,7 @@ classdef NeuralNetworks < handle
     methods
         %%% ################ Constructor #####################
         function obj=NeuralNetworks(nL,nU,weightsScal,activationFunType)
+            
             obj.noLayers=nL;
             obj.noUnits=nU;
             obj.activationFunType=activationFunType;
@@ -27,12 +30,12 @@ classdef NeuralNetworks < handle
             obj.initializeWeights(-weightsScal,weightsScal);
         end
         
-        function Test(obj)
-            for l=1:obj.noLayers-1
-                size(obj.theta{l})
-                size(obj.grad{l})
-            end
-        end
+%         function Test(obj)
+%             for l=1:obj.noLayers-1
+%                 size(obj.theta{l})
+%                 size(obj.grad{l})
+%             end
+%         end
         %%%####################################################
         %%%################# Initialize Weights ####################
         function initializeWeights(obj,minimum,maximum)
@@ -67,15 +70,15 @@ classdef NeuralNetworks < handle
         %%%####################################################
         %%%#################### GradiantDescent #########################
         function gradiantDescent(obj,inputs,targets,learnRate)
-            J=0;
+            
             for l=1: obj.noLayers-1
                 obj.grad{l}=obj.grad{l}*0;
             end
-            
+            costFunTrain=0;
             for i=1:length(inputs)
                 obj.feedForward(inputs(i,:));
                 obj.Error(targets(i,:));
-                J=J+sum(obj.error{obj.noLayers}.^2);
+                costFunTrain=costFunTrain+sum(obj.error{obj.noLayers}.^2);
                 for l=1:obj.noLayers-1
                     
 %                     obj.grad{l}=obj.grad{l}+[obj.a{l}]'*obj.error{l+1}';
@@ -86,8 +89,8 @@ classdef NeuralNetworks < handle
                 obj.grad{l}=obj.grad{l}/length(inputs);
             end
 %             obj.grad{l}(2)
-            J=J/length(inputs)
-            obj.J=J; 
+            costFunTrain=costFunTrain/length(inputs)
+            obj.costFunTrain(end+1)=costFunTrain; 
             %%%---------------- Correction of weights
             for l=obj.noLayers-1:-1:1
                 obj.theta{l}=obj.theta{l}-obj.grad{l}*learnRate;
@@ -97,16 +100,29 @@ classdef NeuralNetworks < handle
         %%%####################################################
         %%%#################### Train #########################
         function train (obj,inputs,targets,noIterations,learnRate)
-            size(targets);
             figure(1)
             hold on
             for i=1:noIterations
                 %                 obj.feedForward(inputs(1,:));
                 %                 obj.Error(targets(1,:))
                 obj.gradiantDescent(inputs,targets,learnRate);
-                plot(i,obj.J,'black.')
+                plot(i,obj.costFunTrain(i),'black.')
                 drawnow
             end
+        end
+        %%%####################################################
+        
+        %%%####################################################
+        %%%#################### Test #########################
+        function test (obj,inputs,targets)
+            costFunTest=0;
+            for i=1:length(inputs)
+                obj.feedForward(inputs(i,:));
+                E=obj.a{obj.noLayers}-targets(i,:);
+                costFunTest=costFunTest+sum(E.^2);
+            end
+            costFunTest=costFunTest/length(inputs);
+            obj.costFunTest=costFunTest;
         end
         %%%####################################################
     end
