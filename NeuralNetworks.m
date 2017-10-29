@@ -11,6 +11,7 @@ classdef NeuralNetworks < handle
         noUnits
         a; % Each element is an "activation" of unit i in the layer l a[l][i]
         z;
+        predictedOutput;
         error
         grad
         theta; % matrix of weights controlling the function mapping form layer j to j+1. theta[l][i in layer l+1][i in layer l];
@@ -41,7 +42,7 @@ classdef NeuralNetworks < handle
         function initializeWeights(obj,minimum,maximum)
             for l=1:obj.noLayers-1
                 obj.theta{l}=minimum + (maximum-minimum)*rand(obj.noUnits(l),obj.noUnits(l+1));
-%                 obj.theta{l}=ones(obj.noUnits(l),obj.noUnits(l+1))*.2; %%%XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+                %                 obj.theta{l}=ones(obj.noUnits(l),obj.noUnits(l+1))*.2; %%%XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
                 obj.grad{l}=zeros(obj.noUnits(l),obj.noUnits(l+1));
                 size(obj.theta{l});
             end
@@ -118,45 +119,48 @@ classdef NeuralNetworks < handle
             obj.costFunTest=0;
             if Plot=="plot"
                 figure(2)
+                grid on
                 hold on
                 k=1; %% output indix for the plot
-                ylim([(min(targets(:,k))-0.2*abs(min(targets(:,k)))) max(targets(:,k))*1.1])
-%                 set(gcf,'Units','normalized','OuterPosition',[0 0 1 1])
-
+                %                 ylim([(min(targets(:,k))-0.2*abs(min(targets(:,k)))) max(targets(:,k))*1.1])
+                %                 set(gcf,'Units','normalized','OuterPosition',[0 0 1 1])
+                
             end
             for i=1:length(inputs)
                 obj.feedForward(inputs(i,:));
+                obj.predictedOutput(:,i)=obj.a{obj.noLayers};
                 E=obj.a{obj.noLayers}-targets(i,:);
-                obj.costFunTest=obj.costFunTest+sum(E.^2);
+                obj.costFunTest=obj.costFunTest+sum([E.^2]);
                 %%----------- plot the predicted values and the true ones -
                 if Plot=="plot"
                     if i>1
                         plot([i-1,i],[targets(i-1,k),targets(i,k)],'r','linewidth',2)
                         plot([i-1,i],[aOld,obj.a{obj.noLayers}(k)],'black','linewidth',4)
-%                         if i==2
-%                              legend('True Value','Predicted')
-%                         end
+                        %                         if i==2
+                        %                              legend('True Value','Predicted')
+                        %                         end
                         if i>15
-                            xlim([i-15 i+5])                            
-                        end                        
+                            xlim([i-15 i+5])
+                        end
                         drawnow;
                         frame(i) = getframe(gcf); % 'gcf' can handle if you zoom in to take a movie.
                         
                     end
                     aOld=obj.a{obj.noLayers}(1);
                 end
-            end            
+            end
             obj.costFunTest=obj.costFunTest/length(inputs);
             
-            
-            video=VideoWriter('ANN_Test2.avi','Uncompressed AVI');
-            video.FrameRate = 10; % How many frames per second.
-            open(video);
-            
-            for i=2:length(inputs)
-                writeVideo(video,frame(i));
+            if Plot=="plot"
+                video=VideoWriter('ANN_Test2.avi','Uncompressed AVI');
+                video.FrameRate = 10; % How many frames per second.
+                open(video);
+                
+                for i=2:length(inputs)
+                    writeVideo(video,frame(i));
+                end
+                close(video)
             end
-            close(video)
             
         end
         %%%####################################################
